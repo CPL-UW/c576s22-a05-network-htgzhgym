@@ -21,7 +21,9 @@ public class GMScript : NetworkBehaviour
     public TMP_Text infoText;
     public TMP_Text dashText;
     public bool DEBUG_MODE;
-    
+
+
+
     private int _difficulty;
     private int _fixedUpdateCount;
     private int _fixedUpdateFramesToWait = 10;
@@ -36,6 +38,8 @@ public class GMScript : NetworkBehaviour
     private Vector3Int[] _myPiece;
     private Vector3Int[] _enemyChunk;
     private Vector3Int[] _enemyPiece;
+
+    private bool _needAdd = false;
 
     private bool _networkStarted;
     private bool _networkRegistered;
@@ -89,6 +93,7 @@ public class GMScript : NetworkBehaviour
 
     private const string MSG_TYPE_CHUNK = "CHUNK";
     private const string MSG_TYPE_PIECE = "PIECE";
+    private const string MSG_TYPE_KILL = "KILL";
 
     private void SendChunkMessage()
     {
@@ -99,6 +104,11 @@ public class GMScript : NetworkBehaviour
     {
         SendMessageToAll(MSG_TYPE_PIECE,v2s(_myPiece));
     }
+    
+    public void SendKillMessage()
+    {
+         SendMessageToAll(MSG_TYPE_KILL, "True");
+    }
 
     void DoNetworkUpdate()
     {
@@ -107,11 +117,20 @@ public class GMScript : NetworkBehaviour
         {
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(MSG_TYPE_CHUNK, ReceiveChunkMessage);
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(MSG_TYPE_PIECE, ReceivePieceMessage);
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(MSG_TYPE_KILL, ReceiveKillMessage);
             _networkRegistered = true;
             return;
         }
         SendChunkMessage();
         SendPieceMessage();
+        if (killRow)
+        {
+            Debug.Log("sent");
+            SendKillMessage();
+            killRow = false;
+            
+        }
+          
     }
 
     private void ReceivePieceMessage(ulong senderID, FastBufferReader reader)
@@ -126,6 +145,18 @@ public class GMScript : NetworkBehaviour
         Dirty = true;
         reader.ReadValueSafe(out var message);
         _enemyChunk = SwitchBounds(s2v(message),_hBounds,_eBounds);
+    }
+    private void ReceiveKillMessage(ulong senderID, FastBufferReader reader)
+    {
+        Dirty = true;
+        reader.ReadValueSafe(out var message);
+        Debug.Log("receivemsg"+ message);
+        _needAdd = message.Equals("True");
+        if (_needAdd)
+        {
+            Debug.Log("receiveTrue");
+        }
+
     }
     
     
@@ -174,10 +205,15 @@ public class GMScript : NetworkBehaviour
         }
 
         if (0 != _fixedUpdateCount++ % _fixedUpdateFramesToWait) return;
-        
+        if (_needAdd)
+        {
+            Debug.Log("add");
+            _myChunk = AddRow(_hBounds, _myChunk);
+            _needAdd = false;
+        }
+
         PlayerMove(0,-1); // tick down
         _myChunk = UpdateKillBoard(_hBounds, _myChunk);
-        
         // infoText.text = $"PTS:{_score}\t\tMAX:{_difficulty}\nCURRIC 576";
         _fixedUpdateCount = 1;
     }
