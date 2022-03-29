@@ -1,3 +1,7 @@
+
+Added feature: when killing a row, add a row (with only 1 brick on the left side) to enemy.
+See /finalBuilds
+____________
 # CS576-Tetris-Sample
 
 1. Clone this repo
