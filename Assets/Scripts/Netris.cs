@@ -14,6 +14,7 @@ public static class Netris
 {
     public const int BOUNDS_MAX = 25;
     private const int NO_ROW = -10 * BOUNDS_MAX;
+    public static bool killRow = false;
 
     private static readonly Vector3Int[] PIECE_T = {new(0, -1), new(1, -1), new(0, 0), new(-1, -1)};
     private static readonly Vector3Int[] PIECE_L = {new(0, -1), new(1, -1), new(1, 0), new(-1, -1)};
@@ -156,8 +157,10 @@ public static class Netris
 
     public static Vector3Int[] UpdateKillBoard(RectInt bounds, Vector3Int[] chunk)
     {
+
         var row_to_kill = FindKillableRow(chunk, bounds);
         return NO_ROW != row_to_kill ? KillRowNumber(chunk, row_to_kill) : chunk;
+        
     }
     
     private static Vector3Int[] KillRowNumber(Vector3Int[] chunk, int row)
@@ -174,10 +177,23 @@ public static class Netris
                 Vector3Int[] movedPieces = {p};
                 newChunk = newChunk.Concat(movedPieces).ToArray();
             }
-
+        
         return newChunk;
     }
     
+    public static Vector3Int[] AddRow(RectInt bounds,Vector3Int[] chunk)
+    {
+        var newChunk = new Vector3Int[] { };
+        foreach (var p in chunk)
+        {
+            Vector3Int[] movedPieces = { new(p.x, p.y + 1, p.z) };
+            newChunk = newChunk.Concat(movedPieces).ToArray();
+
+        }
+        Vector3Int[] newRow = { new(bounds.xMin,bounds.yMin) };
+        newChunk = newChunk.Concat(newRow).ToArray();
+        return newChunk;
+    }
 
     private static int FindKillableRow(Vector3Int[] chunk, RectInt bounds)
     {
@@ -187,8 +203,15 @@ public static class Netris
             var maxCount = 1 + bounds.xMax - bounds.xMin; // width
             foreach (var p in chunk)
                 if (p.y == row) maxCount--;
-            if (0 == maxCount) return row;
+            if (0 == maxCount)
+            {
+                killRow = true;
+                return row;
+                
+            }
         }
         return NO_ROW;
     }
+
+
 }
